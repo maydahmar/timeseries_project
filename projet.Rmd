@@ -7,15 +7,17 @@ date: "2023-12-11"
 
 Avant de se plonger dans des analyses spécifiques, il est essentiel d'examiner les données pour comprendre leur structure, leurs variables et leurs statistiques de base. Nous chargerons les données, examinerons les premières lignes et passerons en revue les types de données et les statistiques sommaires.
 ```{r setup, include=FALSE}
-library(readr)
-install.packages("tidyverse")
 
-library(tidyverse)
+library(readr)
+#library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(stats)
 
 
 # Lecture des ensembles de données
-day_data <- read_csv("C:/Users/HP/Desktop/serie chrono/hour.csv")
-hour_data <- read_csv("C:/Users/HP/Desktop/serie chrono/day.csv")
+day_data <- read_csv("bike+sharing+dataset/hour.csv")
+hour_data <- read_csv("bike+sharing+dataset/day.csv")
 
 ```
 
@@ -213,9 +215,7 @@ day_data$cnt[is.na(day_data$cnt)] <- mean(day_data$cnt, na.rm = TRUE)
 
 
 ```{r}
-library(dplyr)
-library(ggplot2)
-library(stats)
+
 
 # Conversion de 'dteday' en format de date
 day_data$dteday <- as.Date(day_data$dteday, format="%Y-%m-%d")
