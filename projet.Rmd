@@ -44,12 +44,16 @@ head(hour_data)
 # Résumé de l'ensemble de données horaires
 summary(hour_data)
 
-# Structure de l'ensemble de données horaires
 str(hour_data)
-
-
 ```
-
+```{r}
+sum(is.na(hour_data))
+sum(is.na(day_data))
+```
+```{r}
+sum(duplicated(hour_data))
+sum(duplicated(day_data))
+```
 
 
 Nous allons maintenant examiner nos données pour répondre aux questions spécifiques posées.
@@ -60,14 +64,6 @@ Nous allons maintenant examiner nos données pour répondre aux questions spéci
 Pour répondre à cette question, nous analyserons la température (temp) par saison et calculerons les moyennes et médianes.
 ```{r}
 library(dplyr)
-
-# Vérification des valeurs uniques dans la colonne 'season'
-unique(day_data$season)
-
-# Conversion de 'season' en facteur pour une meilleure lisibilité
-day_data$season <- factor(day_data$season, 
-                          levels = c(1, 2, 3, 4),
-                          labels = c("Printemps", "Été", "Automne", "Hiver"))
 
 # Calcul de la température moyenne et médiane par saison
 temperature_stats <- day_data %>%
@@ -108,19 +104,7 @@ corrplot(correlation_matrix, method = "circle")
 
 Nous calculerons ces moyennes pour chaque mois pour identifier des tendances saisonnières.
 
-```{r}
-# Calcul des moyennes mensuelles
-monthly_stats <- day_data %>%
-  group_by(mnth) %>%
-  summarise(mean_temp = mean(temp),
-            mean_humidity = mean(hum),
-            mean_windspeed = mean(windspeed),
-            mean_rentals = mean(cnt))
 
-# Afficher les résultats
-print(monthly_stats)
-
-```
 Les valeurs de température, d'humidité et de vitesse du vent sont normalisées. La température moyenne est la plus élevée en juillet (0.755) et la plus basse en décembre (0.324). L'humidité est relativement stable tout au long de l'année avec une légère augmentation pendant les mois d'été. La vitesse du vent moyenne est généralement la plus faible en juillet (0.166) et la plus élevée en avril (0.234). Le nombre de locations de vélos est le plus élevé en juin (5772.37) et le plus bas en janvier (2176.34).
 ```{r}
 # Calcul des moyennes mensuelles
@@ -288,13 +272,23 @@ plot(diff3_cnttimeseries)
 
 
 ```{r}
-par(mfrow=c(2,1))
-acf(diff3_cnttimeseries,lag.max= 370, main="ACF")
 pacf(diff3_cnttimeseries, lag.max= 370, main="PACF")
 ```
 
 
 ```{r}
+acf(diff3_cnttimeseries,lag.max= 370, main="ACF")
+
+```
+
+
+```{r}
+#AR(1) donc p=8 
+#ARIMA(1,2,0)(?,1,?)h=365
+
+#on regarde les valeurs de ACF et PACF à chaque début de saison
+#on remarque un pique sur le ACF et le PACF donc P=1 ou Q=1
+
 #model_m1 <- arima(day_data$cnttimeseries, order = c(2, 1, 0), seasonal = list(order = c(2, 1, 0), period = 12))
 #forecast_values <- forecast(model_m1, h = 30)
 #plot(forecast_values)
