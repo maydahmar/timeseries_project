@@ -176,25 +176,7 @@ ggplot(day_data, aes(x=dteday, y=cnt)) +
   theme(axis.text.x = element_text(angle=90, hjust=1))
 
 ```
-
-
-```{r}
-# Identifier les valeurs aberrantes, par exemple en utilisant la méthode des écarts interquartiles
-IQR_values <- IQR(day_data$cnt)
-quantiles <- quantile(day_data$cnt, probs=c(.25, .75))
-cap <- quantiles[2] + 1.5 * IQR_values
-floor <- quantiles[1] - 1.5 * IQR_values
-
-# Filtrer les valeurs aberrantes
-day_data <- day_data %>%
-  filter(cnt >= floor & cnt <= cap)
-
-# Gérer les valeurs manquantes, par exemple, en les remplaçant par la moyenne
-day_data$cnt[is.na(day_data$cnt)] <- mean(day_data$cnt, na.rm = TRUE)
-
-
-
-```
+Il y a une saison annuelle, on voit une tendance ( mois plus chauds implique hausse des locations et une baisse pendant les mois plus froids). La variance est plus au moins constante.
 
 
 
@@ -232,7 +214,6 @@ ggplot(day_data, aes(x=dteday)) +
 ```
 
 ```{r}
-
 # Convertir la colonne cnt en time series
 day_data$cnttimeseries <- ts(day_data$cnt, frequency = 1)
 
@@ -245,7 +226,12 @@ lines(day_data$cnttimeseries, col = 'blue')
 
 # Ajouter une légende
 legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), lty = 1, bty = 'n')
+```
 
+
+```{r}
+log_cntts <- log(day_data$cnttimeseries)
+plot(log_cntts)
 ```
 
 
@@ -254,37 +240,29 @@ legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), l
 ```{r}
 
 #diff on season
-cnttimeseries_s <- diff(day_data$cnttimeseries, lag=365)
+cnttimeseries_s <- diff(log_cntts, lag=12)
 plot(cnttimeseries_s)
 
 ```
+
+
 ```{r}
-#diff on trend
-diff2_cnttimeseries <- diff(cnttimeseries_s)
-plot(cnttimeseries_s)
+pacf(cnttimeseries_s,lag.max=80, main="PACF")
 ```
 
 
 ```{r}
-diff3_cnttimeseries <- diff(diff2_cnttimeseries)
-plot(diff3_cnttimeseries)
-```
-
-
-```{r}
-pacf(diff3_cnttimeseries, lag.max= 370, main="PACF")
-```
-
-
-```{r}
-acf(diff3_cnttimeseries,lag.max= 370, main="ACF")
+acf(cnttimeseries_s,lag.max= 100, main="ACF")
 
 ```
 
 
 ```{r}
-#AR(1) donc p=8 
-#ARIMA(1,2,0)(?,1,?)h=365
+#MA(3) ou AR(1)
+#ARIMA(1,0,0)(5,1,0)h=12
+#ARIMA(0,0,3)(5,1,0)h=12
+#ARIMA(1,0,0)(0,1,5)h=12
+#ARIMA(0,0,3)(0,1,5)h=12
 
 #on regarde les valeurs de ACF et PACF à chaque début de saison
 #on remarque un pique sur le ACF et le PACF donc P=1 ou Q=1
