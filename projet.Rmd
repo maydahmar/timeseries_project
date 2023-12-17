@@ -247,7 +247,7 @@ plot(cnttimeseries_s)
 
 
 ```{r}
-pacf(cnttimeseries_s,lag.max=80, main="PACF")
+pacf(cnttimeseries_s,lag.max=100, main="PACF")
 ```
 
 
@@ -259,16 +259,85 @@ acf(cnttimeseries_s,lag.max= 100, main="ACF")
 
 ```{r}
 #MA(3) ou AR(1)
-#ARIMA(1,0,0)(5,1,0)h=12
-#ARIMA(0,0,3)(5,1,0)h=12
-#ARIMA(1,0,0)(0,1,5)h=12
-#ARIMA(0,0,3)(0,1,5)h=12
+#ARIMA(1,0,0)(4,1,0)h=12 ***
+#ARIMA(0,0,3)(4,1,0)h=12 ****
+#ARIMA(1,0,0)(0,1,2)h=12 *
+#ARIMA(0,0,3)(0,1,2)h=12 **
 
 #on regarde les valeurs de ACF et PACF à chaque début de saison
-#on remarque un pique sur le ACF et le PACF donc P=1 ou Q=1
+#on remarque un pique sur le ACF et le PACF donc P=4 ou Q=2
+```
 
-#model_m1 <- arima(day_data$cnttimeseries, order = c(2, 1, 0), seasonal = list(order = c(2, 1, 0), period = 12))
-#forecast_values <- forecast(model_m1, h = 30)
-#plot(forecast_values)
 
+
+```{r}
+model_m1 <- arima(log_cntts, order = c(0, 0, 3), seasonal = list(order = c(4, 1, 0), period = 12))
+
+residuals_m1 <- residuals(model_m1)
+plot(residuals_m1)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_m1, main = "ACF of Residuals")
+pacf(residuals_m1, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
+
+Box.test(residuals_m1, type = "Ljung-Box")
+#p-value= 0.8709
+aic_value_m1 <- AIC(model_m1)
+cat("AIC du modèle m1:", aic_value_m1, "\n")
+#AIC=740.9598
+```
+
+
+
+```{r}
+model_m2 <- arima(log_cntts, order = c(0, 0, 3), seasonal = list(order = c(0, 1, 1), period = 12))
+
+residuals_m2 <- residuals(model_m2)
+plot(residuals_m2)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_m2, main = "ACF of Residuals")
+pacf(residuals_m2, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
+
+Box.test(residuals_m2, type = "Ljung-Box")
+#p-value= 0.8193
+aic_value_m2 <- AIC(model_m2)
+cat("AIC du modèle m2:", aic_value_m2, "\n")
+#AIC=728.3433 
+```
+```{r}
+model_m3 <- arima(log_cntts, order = c(1, 0, 0), seasonal = list(order = c(4, 1, 0), period = 12))
+
+residuals_m3 <- residuals(model_m3)
+plot(residuals_m3)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_m3, main = "ACF of Residuals")
+pacf(residuals_m3, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
+
+Box.test(residuals_m3, type = "Ljung-Box")
+#p-value= 0.5306
+aic_value_m3 <- AIC(model_m3)
+cat("AIC du modèle m3:", aic_value_m3, "\n")
+#AIC=728.3557 
+```
+```{r}
+model_m4 <- arima(log_cntts, order = c(1, 0, 0), seasonal = list(order = c(0, 1, 2), period = 12))
+
+residuals_m4 <- residuals(model_m4)
+plot(residuals_m4)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_m4, main = "ACF of Residuals")
+pacf(residuals_m4, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
+
+Box.test(residuals_m4, type = "Ljung-Box")
+#p-value= 0.0414
+aic_value_m4 <- AIC(model_m4)
+cat("AIC du modèle m4:", aic_value_m4, "\n")
+#AIC=706.1448 
 ```
