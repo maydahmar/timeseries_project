@@ -16,8 +16,8 @@ library(stats)
 
 
 # Lecture des ensembles de données
-day_data <- read_csv("bike+sharing+dataset/hour.csv")
-hour_data <- read_csv("bike+sharing+dataset/day.csv")
+day_data <- read_csv("bike+sharing+dataset/day.csv")
+hour_data <- read_csv("bike+sharing+dataset/hour.csv")
 
 ```
 
@@ -234,12 +234,12 @@ day_data <- day_data %>%
 day_data$cnt[is.na(day_data$cnt)] <- mean(day_data$cnt, na.rm = TRUE)
 
 # Lisser la série temporelle en utilisant une moyenne mobile avec la fonction 'filter' du package 'stats'
-day_data$smoothed_cnt <- stats::filter(day_data$cnt, rep(1/7, 7), sides=2)
+day_data$cnttimeseries <- ts(day_data$cnt)
 
 # Comparer la série lissée avec l'originale
 ggplot(day_data, aes(x=dteday)) + 
-  geom_line(aes(y=cnt), color="blue") + 
-  geom_line(aes(y=smoothed_cnt), color="red") +
+  geom_line(aes(y=cnttimeseries), color="blue") + 
+  geom_line(aes(y=cnt), color="red") +
   labs(title="Comparaison du Nombre de Locations Original et Lissé par Jour", 
        x="Date", 
        y="Nombre de Locations") +
@@ -247,3 +247,56 @@ ggplot(day_data, aes(x=dteday)) +
 
 ```
 
+```{r}
+
+# Convertir la colonne cnt en time series
+day_data$cnttimeseries <- ts(day_data$cnt, frequency = 1)
+
+# Tracer la série temporelle originale
+plot(day_data$cnt, col = 'red', type = 'l', xlab = 'Time', ylab = 'Number of Bike Rentals',
+     main = 'Comparison of Original and Smoothed Bike Rentals per Day')
+
+# Ajouter la série lissée
+lines(day_data$cnttimeseries, col = 'blue')
+
+# Ajouter une légende
+legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), lty = 1, bty = 'n')
+
+```
+
+
+
+
+```{r}
+
+#diff on season
+cnttimeseries_s <- diff(day_data$cnttimeseries, lag=365)
+plot(cnttimeseries_s)
+
+```
+```{r}
+#diff on trend
+diff2_cnttimeseries <- diff(cnttimeseries_s)
+plot(cnttimeseries_s)
+```
+
+
+```{r}
+diff3_cnttimeseries <- diff(diff2_cnttimeseries)
+plot(diff3_cnttimeseries)
+```
+
+
+```{r}
+par(mfrow=c(2,1))
+acf(diff3_cnttimeseries,lag.max= 370, main="ACF")
+pacf(diff3_cnttimeseries, lag.max= 370, main="PACF")
+```
+
+
+```{r}
+#model_m1 <- arima(day_data$cnttimeseries, order = c(2, 1, 0), seasonal = list(order = c(2, 1, 0), period = 12))
+#forecast_values <- forecast(model_m1, h = 30)
+#plot(forecast_values)
+
+```
