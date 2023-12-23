@@ -321,6 +321,18 @@ pacf(residuals_m3, main = "PACF of Residuals")
 Box.test(residuals_m3, type = "Ljung-Box")
 #p-value= 0.5306
 aic_value_m3 <- AIC(model_m3)
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
 cat("AIC du modèle m3:", aic_value_m3, "\n")
 #AIC=728.3557 
 ```
@@ -340,4 +352,102 @@ Box.test(residuals_m4, type = "Ljung-Box")
 aic_value_m4 <- AIC(model_m4)
 cat("AIC du modèle m4:", aic_value_m4, "\n")
 #AIC=706.1448 
+
+```
+
+##Désaisonnaliser les données :
+```{r}
+#Désaisonnaliser les données 
+diff_cnt <- diff(log_cntts, lag=12)
+plot(diff_cnt)
+
+
+```
+```{r}
+pacf(diff_cnt,lag.max=100, main="PACF")
+```
+L'ACF présente une décroissance rapide après le premier décalage, ce qui suggère un terme MA. Si ce décalage est le seul significatif, cela pourrait indiquer un modèle MA(1).
+
+Le PACF montre un pic significatif au premier décalage et ensuite il se stabilise, ce qui est typique d'un modèle AR(1).
+
+```{r}
+
+acf(diff_cnt,lag.max= 100, main="ACF")
+```
+```{r}
+#AR(1)
+#MA(1)
+#ARIMA(1,0,0)(?,?,?)h=12
+#ARIMA(0,0,1)(?,?,?)h=12 
+#ARIMA(1,0,1)(?,?,?)h=12
+#ARIMA(?,?,?)(1,0,0)h=12
+
+
+```
+
+
+```{r}
+#Vérifier la stationnarité
+
+# Installer le package tseries si nécessaire
+install.packages("tseries")
+
+# Charger le package tseries
+library(tseries)
+
+adf.test(diff_cnt)
+
+```
+Le test de Dickey-Fuller augmenté est utilisé pour tester la stationnarité d'une série temporelle. Un résultat avec une valeur de p faible (typiquement p < 0.05) indique que nous pouvons rejeter l'hypothèse nulle de non-stationnarité, ce qui signifie que la série est considérée comme stationnaire.
+
+Dans notre cas, avec un p-value de 0.01, le test indique que la série diff_cnt est stationnaire. On peut donc passer à l'ajustement de modèles ARIMA sur cette série déjà différenciée, car la stationnarité est une exigence clé pour l'application des modèles ARIMA.
+
+La valeur Dickey-Fuller de -7.4018, qui est suffisamment négative, renforce cette conclusion, car plus la statistique est négative, plus la preuve contre l'hypothèse nulle (et donc en faveur de la stationnarité) est forte. Le lag order de 8 indique le nombre de retards pris en compte dans le test pour la série temporelle.
+
+```{r}
+# Installer le package forecast si nécessaire
+install.packages("forecast")
+
+# Charger le package forecast
+library(forecast)
+
+# Ajuster un modèle ARIMA automatiquement sur les données stationnaires
+fit_arima <- auto.arima(diff_cnt)
+
+# Afficher le résumé du modèle ajusté
+summary(fit_arima)
+
+# Tracer les diagnostics des résidus
+```
+
+
+```{r}
+checkresiduals(fit_arima)
+
+Box.test(residuals(fit_arima), type = "Ljung-Box")
+
+aic_value <- AIC(fit_arima)
+cat("AIC du modèle ajusté:", aic_value, "\n")
+
+
+```
+```{r}
+# Extraire les résidus
+residus <- residuals(fit_arima)
+
+# Tracer les résidus
+plot(residus, type = "l", main = "Résidus du Modèle ARIMA", xlab = "Temps", ylab = "Résidus")
+
+# Tracer l'ACF des résidus
+acf(residus, main = "ACF des Résidus")
+
+# Tracer le PACF des résidus
+pacf(residus, main = "PACF des Résidus")
+
+```
+```{r}
+library(forecast)
+forecasts <- forecast(fit_arima, h=25)
+plot(forecasts)
+
 ```
