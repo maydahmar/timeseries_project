@@ -202,30 +202,41 @@ day_data$cnt[is.na(day_data$cnt)] <- mean(day_data$cnt, na.rm = TRUE)
 # Lisser la série temporelle en utilisant une moyenne mobile avec la fonction 'filter' du package 'stats'
 day_data$cnttimeseries <- ts(day_data$cnt, frequency = 12)
 hw_model <- HoltWinters(day_data$cnttimeseries)
+# Extraire les valeurs lissées
+fitted_values <- hw_model$fitted[, "xhat"]
+
 
 plot(hw_model)
 
-# Comparer la série lissée avec l'originale
-ggplot(day_data, aes(x=dteday)) + 
-  geom_line(aes(y=hw_model), color="blue") + 
-  geom_line(aes(y=cnt), color="red") +
-  labs(title="Comparaison du Nombre de Locations Original et Lissé par Jour", 
+ggplot(day_data, aes(x=dteday, y=cnt)) + 
+  geom_line(color="red") +
+  labs(title="Nombre de Locations Original par Jour", 
        x="Date", 
        y="Nombre de Locations") +
   theme(axis.text.x = element_text(angle=90, hjust=1))
 
+
+# Comparer la série lissée avec l'originale
+# Créer le graphique
+#ggplot(day_data, aes(x=dteday)) + 
+ # geom_line(aes(y=fitted_values), color="blue") + 
+  #geom_line(aes(y=cnt), color="red") +
+  #labs(title="Comparaison du Nombre de Locations Original et Lissé par Jour", 
+   #    x="Date", 
+    #   y="Nombre de Locations") +
+#  <heme(axis.text.x = element_text(angle=90, hjust=1))
+
 ```
 
 ```{r}
-# Convertir la colonne cnt en time series
-day_data$cnttimeseries <- ts(day_data$cnt, frequency = 1)
+
 
 # Tracer la série temporelle originale
 plot(day_data$cnt, col = 'red', type = 'l', xlab = 'Time', ylab = 'Number of Bike Rentals',
      main = 'Comparison of Original and Smoothed Bike Rentals per Day')
 
 # Ajouter la série lissée
-lines(day_data$cnttimeseries, col = 'blue')
+lines(fitted_values, col = 'blue')
 
 # Ajouter une légende
 legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), lty = 1, bty = 'n')
@@ -233,34 +244,51 @@ legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), l
 
 
 ```{r}
-hw1 <- fitted(hw_model)
-```
+# Extraire les valeurs prévues à partir du modèle HoltWinters
+fitted_values <- hw_model$fitted[, "xhat"]
 
+# Appliquer la différenciation saisonnière
+diff_series <- diff(fitted_values, lag=12)
 
-```{r}
-log_cntts <- log(hw_model)
-plot(log_cntts)
-```
-
-
-
-
-```{r}
-
-#diff on season
-cnttimeseries_s <- diff(hw_model, lag=12)
-plot(cnttimeseries_s)
+# Tracer la série différenciée
+plot(diff_series, main="Série Temporelle Différenciée", xlab="Temps", ylab="Différences")
 
 ```
 
 
 ```{r}
-pacf(cnttimeseries_s,lag.max=100, main="PACF")
+log_cntts <- log(diff_series)
+plot(diff_series)
+
+sum(is.na(log_cntts)) 
+
+library(forecast)
+log_cnt_interpolated <- na.interp(log_cntts)
+
+
+```
+
+```{r}
+#test si serie est stationnaire
+
+library(tseries)
+
+
+result <- adf.test(log_cnt_interpolated, alternative = "stationary")
+
+# Afficher les résultats du test
+print(result)
+
 ```
 
 
 ```{r}
-acf(cnttimeseries_s,lag.max= 100, main="ACF")
+pacf(log_cnt_interpolated,lag.max=100, main="PACF")
+```
+
+
+```{r}
+acf(log_cnt_interpolated,lag.max= 100, main="ACF")
 
 ```
 
@@ -366,10 +394,12 @@ cat("AIC du modèle m4:", aic_value_m4, "\n")
 library(forecast)
 
 # Ajuster un modèle ARIMA automatiquement sur les données stationnaires
-fit_arima1 <- auto.arima(log_cntts, seasonal=TRUE,seasonal.test = "ch")
+# Supposons que 'diff_log_cnt_clean' est votre série temporelle prétraitée
+model <- auto.arima(diff_log_cnt)
+
 
 # Afficher le résumé du modèle ajusté
-summary(fit_arima1)
+summary(model)
 ```
 
 ##Désaisonnaliser les données :
