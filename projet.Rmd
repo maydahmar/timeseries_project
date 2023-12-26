@@ -200,11 +200,14 @@ day_data <- day_data %>%
 day_data$cnt[is.na(day_data$cnt)] <- mean(day_data$cnt, na.rm = TRUE)
 
 # Lisser la série temporelle en utilisant une moyenne mobile avec la fonction 'filter' du package 'stats'
-day_data$cnttimeseries <- ts(day_data$cnt)
+day_data$cnttimeseries <- ts(day_data$cnt, frequency = 12)
+hw_model <- HoltWinters(day_data$cnttimeseries)
+
+plot(hw_model)
 
 # Comparer la série lissée avec l'originale
 ggplot(day_data, aes(x=dteday)) + 
-  geom_line(aes(y=cnttimeseries), color="blue") + 
+  geom_line(aes(y=hw_model), color="blue") + 
   geom_line(aes(y=cnt), color="red") +
   labs(title="Comparaison du Nombre de Locations Original et Lissé par Jour", 
        x="Date", 
@@ -230,7 +233,12 @@ legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), l
 
 
 ```{r}
-log_cntts <- log(day_data$cnttimeseries)
+hw1 <- fitted(hw_model)
+```
+
+
+```{r}
+log_cntts <- log(hw_model)
 plot(log_cntts)
 ```
 
@@ -240,7 +248,7 @@ plot(log_cntts)
 ```{r}
 
 #diff on season
-cnttimeseries_s <- diff(log_cntts, lag=12)
+cnttimeseries_s <- diff(hw_model, lag=12)
 plot(cnttimeseries_s)
 
 ```
@@ -354,6 +362,15 @@ cat("AIC du modèle m4:", aic_value_m4, "\n")
 #AIC=706.1448 
 
 ```
+```{r}
+library(forecast)
+
+# Ajuster un modèle ARIMA automatiquement sur les données stationnaires
+fit_arima1 <- auto.arima(log_cntts, seasonal=TRUE,seasonal.test = "ch")
+
+# Afficher le résumé du modèle ajusté
+summary(fit_arima1)
+```
 
 ##Désaisonnaliser les données :
 ```{r}
@@ -364,23 +381,66 @@ plot(diff_cnt)
 
 ```
 ```{r}
-pacf(diff_cnt,lag.max=100, main="PACF")
+pacf(diff_cnt, main="PACF")
 ```
 L'ACF présente une décroissance rapide après le premier décalage, ce qui suggère un terme MA. Si ce décalage est le seul significatif, cela pourrait indiquer un modèle MA(1).
+
 
 Le PACF montre un pic significatif au premier décalage et ensuite il se stabilise, ce qui est typique d'un modèle AR(1).
 
 ```{r}
 
-acf(diff_cnt,lag.max= 100, main="ACF")
+acf(diff_cnt, main="ACF")
 ```
 ```{r}
 #AR(1)
-#MA(1)
-#ARIMA(1,0,0)(?,?,?)h=12
-#ARIMA(0,0,1)(?,?,?)h=12 
-#ARIMA(1,0,1)(?,?,?)h=12
-#ARIMA(?,?,?)(1,0,0)h=12
+#MA(3)
+#ARIMA(1,0,0)
+#ARIMA(0,0,3)
+
+
+```
+```{r}
+model_m1_deseasonal <- arima(diff_cnt, order = c(1, 0, 0))
+
+residuals_m1_deseasonal <- residuals(model_m1_deseasonal)
+plot(residuals_m1_deseasonal)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_m1_deseasonal, main = "ACF of Residuals")
+pacf(residuals_m1_deseasonal, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
+
+Box.test(residuals_m1_deseasonal, type = "Ljung-Box")
+#p-value= 0.6342
+aic_value_m1_deseasonal<- AIC(model_m1_deseasonal)
+cat("AIC du modèle m4:", aic_value_m1_deseasonal, "\n")
+#AIC=1021.205  
+
+```
+```{r}
+model_m2_deseasonal <- arima(diff_cnt, order = c(0, 0, 3))
+
+residuals_m2_deseasonal <- residuals(model_m2_deseasonal)
+plot(residuals_m2_deseasonal)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_m2_deseasonal, main = "ACF of Residuals")
+pacf(residuals_m2_deseasonal, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
+
+Box.test(residuals_m2_deseasonal, type = "Ljung-Box")
+#p-value= 0.9663
+aic_value_m2_deseasonal<- AIC(model_m2_deseasonal)
+cat("AIC du modèle m2:", aic_value_m2_deseasonal, "\n")
+#AIC=1024.098   
+```
+
+acf(diff2_cnt,lag.max= 100, main="ACF")
+```
+
+
+```
 
 
 ```
@@ -406,7 +466,6 @@ La valeur Dickey-Fuller de -7.4018, qui est suffisamment négative, renforce cet
 
 ```{r}
 # Installer le package forecast si nécessaire
-install.packages("forecast")
 
 # Charger le package forecast
 library(forecast)
