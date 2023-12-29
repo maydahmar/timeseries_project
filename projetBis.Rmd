@@ -196,51 +196,15 @@ floor <- quantiles[1] - 1.5 * IQR_values
 day_data <- day_data %>%
   filter(cnt >= floor & cnt <= cap)
 
-# Gérer les valeurs manquantes, par exemple, en les remplaçant par la moyenne
-day_data$cnt[is.na(day_data$cnt)] <- mean(day_data$cnt, na.rm = TRUE)
-
 # Lisser la série temporelle en utilisant une moyenne mobile avec la fonction 'filter' du package 'stats'
 day_data$cnttimeseries <- ts(day_data$cnt, frequency = 12)
-hw_model <- HoltWinters(day_data$cnttimeseries)
-# Extraire les valeurs lissées
-fitted_values <- hw_model$fitted[, "xhat"]
 
+hw_model <- HoltWinters(day_data$cnttimeseries)
 
 plot(hw_model)
 
-#ggplot(day_data, aes(x=dteday, y=cnt)) + 
-#  geom_line(color="red") +
-#  labs(title="Nombre de Locations Original par Jour", 
-#       x="Date", 
-#       y="Nombre de Locations") +
-#  theme(axis.text.x = element_text(angle=90, hjust=1))
-
-
-# Comparer la série lissée avec l'originale
-# Créer le graphique
-#ggplot(day_data, aes(x=dteday)) + 
-#  geom_line(aes(y=hw_model), color="blue") + 
-#  geom_line(aes(y=cnt), color="red") +
- # labs(title="Comparaison du Nombre de Locations Original et Lissé par Jour", 
- #      x="Date", 
- #      y="Nombre de Locations") +
-#  theme(axis.text.x = element_text(angle=90, hjust=1))
-
 ```
 
-```{r}
-
-
-# Tracer la série temporelle originale
-plot(day_data$cnt, col = 'red', type = 'l', xlab = 'Time', ylab = 'Number of Bike Rentals',
-     main = 'Comparison of Original and Smoothed Bike Rentals per Day')
-
-# Ajouter la série lissée
-lines(fitted_values, col = 'blue')
-
-# Ajouter une légende
-legend('topright', legend = c('Original', 'Smoothed'), col = c('red', 'blue'), lty = 1, bty = 'n')
-```
 
 
 ```{r}
@@ -252,10 +216,13 @@ smoothed_ts <- ts(fitted_values, frequency = 12)
 
 plot(smoothed_ts)
 
+result <- adf.test(smoothed_ts, alternative = "stationary")
 
+# Afficher les résultats du test
+print(result)
 
 ```
-
+La série n'est pas stationnaire (variance constante mais moyenne variable) le test de Dicker Fuller confirme cela avec une p_value = 0.96 (hyp nulle : non stationnaire), on distingue une saison (qui se répète deux fois).
 
 ```{r}
 # Appliquer la différenciation saisonnière
@@ -264,57 +231,37 @@ diff_series <- diff(smoothed_ts, lag=12)
 # Tracer la série différenciée
 plot(diff_series, main="Série Temporelle Différenciée", xlab="Temps", ylab="Différences")
 
-#log_cntts <- log(diff_series)
-#plot(diff_series)
-
-#sum(is.na(log_cntts)) 
-
-library(forecast)
-#log_cnt_interpolated <- na.interp(log_cntts)
-
-
-```
-
-```{r}
-#test si serie est stationnaire
-
-library(tseries)
-
-
-result <- adf.test(diff_series, alternative = "stationary")
-
-# Afficher les résultats du test
-print(result)
-
 ```
 
 
 ```{r}
-pacf(fitted_values,lag.max=100, main="PACF")
+pacf(diff_series,lag.max=100, main="PACF")
 ```
 
 
 ```{r}
-acf(fitted_values,lag.max= 100, main="ACF")
+acf(diff_series,lag.max= 100, main="ACF")
 
 ```
+On remarque le PACF décroit exponentiellement, et sur le ACF on lit : MA(9)
+On remarque le ACF décroit exponentiellement, et sur le PACF on lit : AR(2)
 
+Concernant les saisons, sur le ACF ça décroit et sur le PACF on lit P = 4
+sur le PACF ça décroit et sur le ACF on lit Q=4
 
 ```{r}
-#MA(3) ou AR(1)
-#ARIMA(1,0,0)(4,1,0)h=12 ***
-#ARIMA(0,0,3)(4,1,0)h=12 ****
-#ARIMA(1,0,0)(0,1,2)h=12 *
-#ARIMA(0,0,3)(0,1,2)h=12 **
+#MA(9) ou AR(2)
+#ARIMA(2,0,0)(3,1,0)h=12 ***
+#ARIMA(0,0,9)(4,1,0)h=12 ****
+#ARIMA(2,0,0)(0,1,2)h=12 *
+#ARIMA(0,0,9)(0,1,2)h=12 **
 
-#on regarde les valeurs de ACF et PACF à chaque début de saison
-#on remarque un pique sur le ACF et le PACF donc P=4 ou Q=2
 ```
 
 
 
 ```{r}
-model_m1 <- arima(log_cntts, order = c(0, 0, 3), seasonal = list(order = c(4, 1, 0), period = 12))
+model_m1 <- arima(smoothed_ts, order = c(2, 0, 0), seasonal = list(order = c(3, 1, 0), period = 12))
 
 residuals_m1 <- residuals(model_m1)
 plot(residuals_m1)
@@ -325,16 +272,16 @@ pacf(residuals_m1, main = "PACF of Residuals")
 #no significant peak on the ACF and PACF
 
 Box.test(residuals_m1, type = "Ljung-Box")
-#p-value= 0.8709
+#p-value= 0.8102
 aic_value_m1 <- AIC(model_m1)
 cat("AIC du modèle m1:", aic_value_m1, "\n")
-#AIC=740.9598
+#AIC=10179.9 
 ```
 
 
 
 ```{r}
-model_m2 <- arima(log_cntts, order = c(0, 0, 3), seasonal = list(order = c(0, 1, 1), period = 12))
+model_m2 <- arima(smoothed_ts, order = c(0, 0, 9), seasonal = list(order = c(4, 1, 0), period = 12))
 
 residuals_m2 <- residuals(model_m2)
 plot(residuals_m2)
@@ -345,13 +292,13 @@ pacf(residuals_m2, main = "PACF of Residuals")
 #no significant peak on the ACF and PACF
 
 Box.test(residuals_m2, type = "Ljung-Box")
-#p-value= 0.8193
+#p-value= 0.7992
 aic_value_m2 <- AIC(model_m2)
 cat("AIC du modèle m2:", aic_value_m2, "\n")
-#AIC=728.3433 
+#AIC=10213.16 
 ```
 ```{r}
-model_m3 <- arima(log_cntts, order = c(1, 0, 0), seasonal = list(order = c(4, 1, 0), period = 12))
+model_m3 <- arima(smoothed_ts, order = c(2, 0, 0), seasonal = list(order = c(0, 1, 2), period = 12))
 
 residuals_m3 <- residuals(model_m3)
 plot(residuals_m3)
@@ -362,25 +309,14 @@ pacf(residuals_m3, main = "PACF of Residuals")
 #no significant peak on the ACF and PACF
 
 Box.test(residuals_m3, type = "Ljung-Box")
-#p-value= 0.5306
+#p-value= 0.7226
 aic_value_m3 <- AIC(model_m3)
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
 cat("AIC du modèle m3:", aic_value_m3, "\n")
-#AIC=728.3557 
+#AIC=10131.05  
 ```
+
 ```{r}
-model_m4 <- arima(log_cntts, order = c(1, 0, 0), seasonal = list(order = c(0, 1, 2), period = 12))
+model_m4 <- arima(smoothed_ts, order = c(0, 0, 9), seasonal = list(order = c(0, 1, 2), period = 12))
 
 residuals_m4 <- residuals(model_m4)
 plot(residuals_m4)
@@ -391,18 +327,21 @@ pacf(residuals_m4, main = "PACF of Residuals")
 #no significant peak on the ACF and PACF
 
 Box.test(residuals_m4, type = "Ljung-Box")
-#p-value= 0.0414
+#p-value= 0.8202
 aic_value_m4 <- AIC(model_m4)
 cat("AIC du modèle m4:", aic_value_m4, "\n")
-#AIC=706.1448 
+#AIC=10206.35 
 
 ```
+Le meilleur modèle a l'air d'être le modèle m2 : ARIMA(0,0,9)(4,1,0)h=12
+
+
 ```{r}
 library(forecast)
 
 # Ajuster un modèle ARIMA automatiquement sur les données stationnaires
 # Supposons que 'diff_log_cnt_clean' est votre série temporelle prétraitée
-model <- auto.arima(diff_log_cnt)
+model <- auto.arima(smoothed_ts)
 
 
 # Afficher le résumé du modèle ajusté
@@ -412,7 +351,7 @@ summary(model)
 ##Désaisonnaliser les données :
 ```{r}
 #Désaisonnaliser les données 
-diff_cnt <- diff(log_cntts, lag=12)
+diff_cnt <- diff(day_data$cnt, lag=12)
 plot(diff_cnt)
 
 
@@ -449,10 +388,10 @@ pacf(residuals_m1_deseasonal, main = "PACF of Residuals")
 #no significant peak on the ACF and PACF
 
 Box.test(residuals_m1_deseasonal, type = "Ljung-Box")
-#p-value= 0.6342
+#p-value= 0.5961
 aic_value_m1_deseasonal<- AIC(model_m1_deseasonal)
 cat("AIC du modèle m4:", aic_value_m1_deseasonal, "\n")
-#AIC=1021.205  
+#AIC=12343.73  
 
 ```
 ```{r}
@@ -467,39 +406,14 @@ pacf(residuals_m2_deseasonal, main = "PACF of Residuals")
 #no significant peak on the ACF and PACF
 
 Box.test(residuals_m2_deseasonal, type = "Ljung-Box")
-#p-value= 0.9663
+#p-value= 0.9679
 aic_value_m2_deseasonal<- AIC(model_m2_deseasonal)
 cat("AIC du modèle m2:", aic_value_m2_deseasonal, "\n")
-#AIC=1024.098   
+#AIC=12346.61    
 ```
-
-acf(diff2_cnt,lag.max= 100, main="ACF")
-```
+Le meilleur modèle en prenant en compte the Parsimony principle est le modèle m1 : AR(1)
 
 
-```
-
-
-```
-
-
-```{r}
-#Vérifier la stationnarité
-
-# Installer le package tseries si nécessaire
-install.packages("tseries")
-
-# Charger le package tseries
-library(tseries)
-
-adf.test(diff_cnt)
-
-```
-Le test de Dickey-Fuller augmenté est utilisé pour tester la stationnarité d'une série temporelle. Un résultat avec une valeur de p faible (typiquement p < 0.05) indique que nous pouvons rejeter l'hypothèse nulle de non-stationnarité, ce qui signifie que la série est considérée comme stationnaire.
-
-Dans notre cas, avec un p-value de 0.01, le test indique que la série diff_cnt est stationnaire. On peut donc passer à l'ajustement de modèles ARIMA sur cette série déjà différenciée, car la stationnarité est une exigence clé pour l'application des modèles ARIMA.
-
-La valeur Dickey-Fuller de -7.4018, qui est suffisamment négative, renforce cette conclusion, car plus la statistique est négative, plus la preuve contre l'hypothèse nulle (et donc en faveur de la stationnarité) est forte. Le lag order de 8 indique le nombre de retards pris en compte dans le test pour la série temporelle.
 
 ```{r}
 # Installer le package forecast si nécessaire
@@ -513,37 +427,77 @@ fit_arima <- auto.arima(diff_cnt)
 # Afficher le résumé du modèle ajusté
 summary(fit_arima)
 
-# Tracer les diagnostics des résidus
 ```
 
 
 ```{r}
-checkresiduals(fit_arima)
 
-Box.test(residuals(fit_arima), type = "Ljung-Box")
+residuals_adjusted_deseasonal <- residuals(fit_arima)
+plot(residuals_adjusted_deseasonal)
+#mean=0 var=cte 
+par(mfrow = c(2, 1))
+acf(residuals_adjusted_deseasonal, main = "ACF of Residuals")
+pacf(residuals_adjusted_deseasonal, main = "PACF of Residuals")
+#no significant peak on the ACF and PACF
 
-aic_value <- AIC(fit_arima)
-cat("AIC du modèle ajusté:", aic_value, "\n")
+Box.test(residuals_adjusted_deseasonal, type = "Ljung-Box")
 
-
-```
-```{r}
-# Extraire les résidus
-residus <- residuals(fit_arima)
-
-# Tracer les résidus
-plot(residus, type = "l", main = "Résidus du Modèle ARIMA", xlab = "Temps", ylab = "Résidus")
-
-# Tracer l'ACF des résidus
-acf(residus, main = "ACF des Résidus")
-
-# Tracer le PACF des résidus
-pacf(residus, main = "PACF des Résidus")
+aic_value_adjusted<- AIC(fit_arima)
+cat("AIC du modèle auto arima:", aic_value_adjusted, "\n")
+    
 
 ```
+Le modèle choisi plus haut, AR(1) donne un AIC légèrement plus élevé, de plus, il est plus simple. et d'après le principe de parsimony, il est préférable de choisir le plus simple.
+
 ```{r}
 library(forecast)
-forecasts <- forecast(fit_arima, h=25)
+forecasts <- forecast(model_m1_deseasonal, h=25)
 plot(forecasts)
 
+```
+```{r}
+
+
+cat(length(day_data$cnt))
+# Diviser les données en ensembles d'entraînement et de test
+train_data <- window(day_data$cnt, start = 1, end = 700)
+test_data <- window(day_data$cnt, start = 701)
+
+```
+```{r}
+train_data_ts <- ts(train_data)
+test_data_ts <- ts(test_data)
+
+ts.plot(train_data_ts)
+```
+
+
+```{r}
+diff_train <- diff(train_data_ts, frequency=12)
+plot(diff_train)
+```
+```{r}
+
+```
+
+```{r}
+# Ajuster un modèle ARIMA manuellement sur l'ensemble d'entraînement
+manual_model <- arima(train_data, order = c(2, 0, 0), seasonal = list(order = c(4, 1, 0), period = 12))
+
+# Ajuster un modèle ARIMA automatiquement sur l'ensemble d'entraînement
+auto_model <- auto.arima(train_data)
+
+# Prévoir les prochaines 25 observations avec les deux modèles
+manual_forecast <- forecast(manual_model, h = 25)
+auto_forecast <- forecast(auto_model, h = 25)
+
+# Plot des prévisions et des données réelles
+plot(test_data, col = "blue", ylim = range(test_data, manual_forecast$mean, auto_forecast$mean),
+     main = "ARIMA Forecast Comparison", xlab = "Time", ylab = "Value")
+lines(manual_forecast$mean, col = "red", lty = 2, lwd = 2)
+lines(auto_forecast$mean, col = "green", lty = 2, lwd = 2)
+
+# Ajouter une légende
+legend("topright", legend = c("Observed", "Manual Forecast", "Auto Forecast"),
+       col = c("blue", "red", "green"), lty = c(1, 2, 2), lwd = 2)
 ```
