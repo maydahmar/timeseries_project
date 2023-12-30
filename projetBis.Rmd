@@ -13,6 +13,7 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 library(stats)
+library(tseries)
 
 
 # Lecture des ensembles de données
@@ -477,27 +478,55 @@ diff_train <- diff(train_data_ts, frequency=12)
 plot(diff_train)
 ```
 ```{r}
-
+pacf(diff_train, main="PACF")
+```
+```{r}
+acf(diff_train, main="ACF")
+```
+On remarque ACF qui décroit donc AR(5)
+PACF décroît donc MA(3)
+```{r}
+auto_model <- auto.arima(train_data)
+summary(auto_model)
 ```
 
 ```{r}
 # Ajuster un modèle ARIMA manuellement sur l'ensemble d'entraînement
-manual_model <- arima(train_data, order = c(2, 0, 0), seasonal = list(order = c(4, 1, 0), period = 12))
+manual_model <- arima(train_data, order = c(0, 0, 3), seasonal = list(order = c(4, 1, 0), period = 12))
 
 # Ajuster un modèle ARIMA automatiquement sur l'ensemble d'entraînement
 auto_model <- auto.arima(train_data)
 
 # Prévoir les prochaines 25 observations avec les deux modèles
-manual_forecast <- forecast(manual_model, h = 25)
-auto_forecast <- forecast(auto_model, h = 25)
-
-# Plot des prévisions et des données réelles
-plot(test_data, col = "blue", ylim = range(test_data, manual_forecast$mean, auto_forecast$mean),
-     main = "ARIMA Forecast Comparison", xlab = "Time", ylab = "Value")
-lines(manual_forecast$mean, col = "red", lty = 2, lwd = 2)
-lines(auto_forecast$mean, col = "green", lty = 2, lwd = 2)
-
-# Ajouter une légende
-legend("topright", legend = c("Observed", "Manual Forecast", "Auto Forecast"),
-       col = c("blue", "red", "green"), lty = c(1, 2, 2), lwd = 2)
+manual_forecast <- forecast(manual_model, h = 31)
+auto_forecast <- forecast(auto_model, h = 31)
 ```
+
+
+
+```{r}
+# Installer la bibliothèque si elle n'est pas déjà installée
+# install.packages("ggplot2")
+
+# Charger la bibliothèque
+library(ggplot2)
+
+# Créer un data frame pour les données réelles, les prévisions manuelles et automatiques
+plot_data <- data.frame(
+  Time = time(test_data),
+  Observed = as.numeric(test_data),
+  Manual_Forecast = as.numeric(manual_forecast$mean),
+  Auto_Forecast = as.numeric(auto_forecast$mean)
+)
+
+# Créer un graphique ggplot
+ggplot(plot_data, aes(x = Time)) +
+  geom_line(aes(y = Observed, color = "Observed"), size = 1) +
+  geom_line(aes(y = Manual_Forecast, color = "Manual Forecast"), linetype = "dashed", size = 1) +
+  geom_line(aes(y = Auto_Forecast, color = "Auto Forecast"), linetype = "dashed", size = 1) +
+  labs(title = "ARIMA Forecast Comparison", x = "Time", y = "Value") +
+  scale_color_manual(name = "Series", values = c("Observed" = "blue", "Manual Forecast" = "red", "Auto Forecast" = "green")) +
+  theme_minimal()
+
+```
+
