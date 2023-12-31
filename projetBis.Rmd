@@ -2,11 +2,16 @@
 title: "Projet"
 output: html_document
 date: "2023-12-11"
+
+
 ---
-##Examen des Données:
+
+##<h1 style="color: blue; font-size: 30px;">Examen des Données:</h1>
+
+
 
 Avant de se plonger dans des analyses spécifiques, il est essentiel d'examiner les données pour comprendre leur structure, leurs variables et leurs statistiques de base. Nous chargerons les données, examinerons les premières lignes et passerons en revue les types de données et les statistiques sommaires.
-```{r setup, include=FALSE}
+```{r echo=FALSE}
 
 library(readr)
 #library(tidyverse)
@@ -23,9 +28,23 @@ hour_data <- read_csv("bike+sharing+dataset/hour.csv")
 ```
 
 
+Les statistiques descriptives du jeu de données indiquent que les variables telles que la température **(temp)**, la température ressentie **(atemp)**, l'humidité **(hum)**, la vitesse du vent **(windspeed)**, ainsi que les compteurs de location de vélos **(casual, registered, cnt)** varient considérablement. Voici une interprétation des résultats :
+
+<span style="color: blue; font-weight: bold;">Saisonnalité et Température</span>: Les températures varient selon les saisons, avec des températures minimales observées en hiver (season: 4) et des températures maximales en été (season: 2). Cela pourrait influencer la demande de location de vélos, car les utilisateurs préfèrent généralement des conditions météorologiques plus clémentes pour le cyclisme.
+
+<span style="color: blue; font-weight: bold;">Tendances Annuelles et Mensuelles</span>: La variable `yr` indique les années 2011(0) et 2012(1), permettant des analyses comparatives entre les deux années. La variable `mnth` montre la répartition mensuelle, ce qui est essentiel pour examiner les tendances mensuelles de la location des vélos.
+
+<span style="color: blue; font-weight: bold;">Jours Fériés et Jours Ouvrables</span>: La variable `holiday` montre les jours fériés, et `workingday` indique si le jour est ouvrable. Ces facteurs peuvent avoir un impact significatif sur le nombre de locations (cnt), car les jours fériés et non ouvrables pourraient voir un nombre différent de locations par rapport aux jours ouvrables.
+
+<span style="color: blue; font-weight: bold;">Conditions Météorologiques</span>: Les conditions météorologiques (`weathersit`) sont classées de 1 (temps clair) à 3 (neige légère ou pluie légère), et ont une incidence directe sur la décision de louer un vélo. Des conditions météorologiques défavorables peuvent réduire le nombre de locations.
+
+<span style="color: blue; font-weight: bold;">Utilisateurs Occasionnels vs Enregistrés</span>: Le nombre d'utilisateurs occasionnels (`casual`) et enregistrés (`registered`) fournit des informations sur les différents types d'utilisateurs du service de partage de vélos. Les utilis
 
 
-```{r cars}
+
+<span style="color: blue; font-weight: bold;">Examen des Données DAY:</span> 
+Avant de détailler les analyses, un examen préliminaire des données journalières est effectué pour assurer une compréhension globale des variables et de leur comportement général. La visualisation des premières entrées via `head(day_data)` offre un aperçu immédiat de la distribution quotidienne des variables. Les statistiques résumées par `summary(day_data)` offrent des mesures descriptives clés telles que la moyenne, la médiane et les plages de données pour chaque variable, révélant ainsi la présence de toute anomalie ou tendance notable. La structure des données est également examinée avec `str(day_data)` pour confirmer les types de données et identifier d'éventuelles irrégularités dans le formatage, telles que des données manquantes ou des types de variables inappropriés.
+```{r echo=FALSE}
 # Affichage des premières lignes de l'ensemble de données journalier
 head(day_data)
 
@@ -36,9 +55,9 @@ summary(day_data)
 str(day_data)
 
 ```
-
-
-```{r pressure, echo=FALSE}
+<span style="color: blue; font-weight: bold;">Examen des Données Horaires:</span> 
+De même, une analyse initiale des données horaires est réalisée pour mettre en évidence les caractéristiques et tendances intra-journalières. En observant les premières lignes avec `head(hour_data)`, nous pouvons identifier les schémas de location de vélos qui pourraient varier tout au long de la journée. Les résumés descriptifs obtenus par summary`(hour_data)` sont essentiels pour comprendre les dynamiques sur une base horaire et pour déceler les différences par rapport aux tendances journalières. Enfin, la structure détaillée fournie par `str(hour_data)` garantit que toutes les données horaires sont correctement formatées et prêtes pour des analyses plus avancées.
+```{r echo=FALSE}
 # Affichage des premières lignes de l'ensemble de données horaires
 head(hour_data)
 
@@ -47,11 +66,29 @@ summary(hour_data)
 
 str(hour_data)
 ```
-```{r}
+
+## <span style="color:blue">Vérification de l'Intégrité des Données</span>
+
+Une étape fondamentale dans le prétraitement des données pour toute analyse de science des données consiste à vérifier la présence de valeurs manquantes au sein des ensembles de données. Les valeurs manquantes peuvent conduire à des biais dans l'analyse et affecter la performance des modèles prédictifs. Ainsi, nous avons procédé à une vérification exhaustive des ensembles de données journalières et horaires.
+
+Pour l'ensemble de données horaires, la commande `sum(is.na(hour_data))` a été exécutée pour compter le nombre total de valeurs manquantes. Le résultat obtenu est `\[1] 0\`, ce qui indique qu'il n'y a aucune valeur manquante dans cet ensemble de données. Cela suggère que les données horaires sont complètes et ne nécessitent pas d'imputation ou de traitement des valeurs manquantes.
+
+De manière similaire, l'ensemble de données journalières a été soumis à la même vérification en utilisant `sum(is.na(day_data))`. Le résultat, également `\[1] 0\`, confirme l'absence de valeurs manquantes dans cet ensemble de données. Ce niveau d'intégrité des données est exceptionnel et permet de poursuivre les analyses sans la nécessité d'adresser des problèmes de données incomplètes.
+
+
+```{r echo=FALSE}
 sum(is.na(hour_data))
 sum(is.na(day_data))
 ```
-```{r}
+## <span style="color:blue">Contrôle de Doublons dans les Ensembles de Données</span>
+
+Un aspect crucial de la préparation des données est l'identification et la gestion des entrées en double. Les doublons peuvent fausser l'analyse et conduire à des interprétations incorrectes. Afin de garantir l'unicité de nos observations, nous avons effectué une vérification des doublons sur les ensembles de données horaires et journalières.
+
+La commande `sum(duplicated(hour_data))` nous a permis de comptabiliser le nombre total d'enregistrements en double dans les données horaires. Le résultat retourné est `\[1] 0`, indiquant qu'il n'existe aucun doublon dans cet ensemble de données. Cela assure que chaque observation horaire est unique et augmente la fiabilité de toute analyse temporelle effectuée sur ces données.
+
+De la même façon, l'ensemble de données journalières a été examiné avec la commande `sum(duplicated(day_data))`. Le résultat, tout aussi `\[1] 0`, confirme qu'il n'y a pas de doublons dans les données journalières. 
+
+```{r echo=FALSE}
 sum(duplicated(hour_data))
 sum(duplicated(day_data))
 ```
@@ -59,11 +96,22 @@ sum(duplicated(day_data))
 
 Nous allons maintenant examiner nos données pour répondre aux questions spécifiques posées.
 
-##Changements de Température Selon les Saisons
+
 #Comment les températures changent-elles selon les saisons ? Quelles sont les températures moyennes et médianes ?
 
-Pour répondre à cette question, nous analyserons la température (temp) par saison et calculerons les moyennes et médianes.
-```{r}
+## <span style="color:blue">Changements de Température Selon les Saisons</span>
+
+Nous avons analysé l'évolution de la température en fonction des saisons en calculant les températures moyennes et médianes. Cet examen permet d'appréhender l'influence potentielle des conditions météorologiques saisonnières sur la fréquence de location des vélos. Les résultats obtenus sont les suivants :
+
+- **Saison 1 (Printemps)** : Avec une température moyenne de `0.2975` et une médiane de `0.2858`, le printemps montre des températures modérées qui pourraient encourager l'utilisation de vélos après l'hiver froid.
+- **Saison 2 (Été)** : L'été affiche des températures plus élevées, avec une moyenne de `0.5444` et une médiane de `0.5621`, ce qui est typique de cette saison chaude et peut correspondre à un pic d'utilisation des vélos.
+- **Saison 3 (Automne)** : L'automne présente la température moyenne la plus élevée parmi les saisons à `0.7063` et une médiane de `0.7158`, suggérant que les conditions restent favorables à la location de vélos.
+- **Saison 4 (Hiver)** : L'hiver, saison la plus froide, enregistre une température moyenne de `0.4229` et une médiane de `0.4092`, des valeurs qui peuvent décourager l'utilisation de vélos comparativement aux autres saisons.
+
+Ces observations sont essentielles pour les décideurs dans le domaine du partage de vélos, car elles indiquent des périodes de demande potentielle plus élevée ou plus faible. Les stratégies de disponibilité des vélos et de marketing peuvent ainsi être ajustées pour optimiser le service tout au long de l'année.
+
+
+```{r echo=FALSE}
 library(dplyr)
 
 # Calcul de la température moyenne et médiane par saison
@@ -76,14 +124,23 @@ temperature_stats <- day_data %>%
 print(temperature_stats)
 
 ```
-Cette partie du code permet d'obtenir une vue d'ensemble des températures par saison, ce qui est crucial pour comprendre comment les conditions météorologiques influencent l'utilisation des vélos.
 
 
-##Y a-t-il une corrélation entre la température (temp/atemp) et le nombre total de locations de vélos ?
 
-Nous examinerons la corrélation entre la température, la température ressentie et le nombre total de locations.
+#Y a-t-il une corrélation entre la température (temp/atemp) et le nombre total de locations de vélos ?
 
-```{r}
+##<span style="color:blue">Corrélation entre Température et Nombre Total de Locations de Vélos</span>
+
+Nous avons exploré la relation entre les facteurs météorologiques et le comportement des utilisateurs en matière de location de vélos. Plus précisément, nous avons examiné la corrélation entre la température mesurée (temp), la température ressentie (atemp), leur moyenne (mean_temp_atemp), et le nombre total de locations de vélos (cnt).
+
+Le corrplot généré illustre les coefficients de corrélation entre ces variables. Les cercles les plus grands et les plus foncés indiquent une corrélation plus forte. Selon le corrplot, nous observons les points suivants :
+
+Une forte corrélation positive entre temp et atemp, ce qui est attendu puisque ces mesures sont souvent liées ;
+La variable mean_temp_atemp montre également une forte corrélation positive avec temp et atemp, confirmant qu'elle est une représentation adéquate de la température générale perçue ;
+Plus important encore, temp, atemp, et mean_temp_atemp affichent une corrélation positive avec cnt, suggérant que des températures plus élevées sont associées à une augmentation du nombre de locations de vélos.
+Ces résultats impliquent que les conditions météorologiques plus chaudes, qui sont confortables pour les cyclistes, pourraient favoriser une plus grande utilisation des services de partage de vélos. Cette information est essentielle pour les opérateurs de services de partage de vélos, car elle peut les aider à planifier et à ajuster la disponibilité des vélos en fonction des conditions météorologiques prévues.
+
+```{r echo=FALSE}
 
 # Charger la bibliothèque corrplot si ce n'est pas déjà fait
 # Si vous ne l'avez pas déjà installée, exécutez install.packages("corrplot")
@@ -103,11 +160,17 @@ corrplot(correlation_matrix, method = "circle")
 
 #Quelles sont les températures moyennes, l'humidité, la vitesse du vent et les locations totales par mois ?
 
-Nous calculerons ces moyennes pour chaque mois pour identifier des tendances saisonnières.
+## <span style="color:blue">Tendances Mensuelles des Locations de Vélos</span>
+
+Nous avons calculé les moyennes mensuelles de la température, de l'humidité, de la vitesse du vent et des locations totales pour révéler des tendances saisonnières significatives. Voici ce que nous avons découvert :
+
+- Les **températures moyennes** augmentent de façon notable du mois de janvier (0.236) au mois de juillet (0.755), indiquant que l'été offre des conditions optimales pour le vélo. Une baisse est ensuite observée en fin d'année, avec la température la plus basse en décembre (0.324), ce qui peut influencer négativement les locations.
+- L'**humidité moyenne** reste relativement stable tout au long de l'année, bien qu'une légère augmentation pendant les mois d'été soit détectée. Cela pourrait avoir un impact sur le confort des cyclistes mais ne semble pas dissuader significativement l'utilisation des vélos.
+- La **vitesse du vent moyenne** est la plus faible en juillet (0.166), créant des conditions agréables pour le cyclisme, et la plus élevée en avril (0.234), ce qui pourrait représenter un léger obstacle pour les utilisateurs de vélos.
+- Le nombre moyen de **locations de vélos (mean_rentals)** est le plus élevé en juin avec 5772.37, soulignant le pic d'utilisation pendant les mois chauds. Janvier voit le nombre le plus faible de locations, avec seulement 2176.34, probablement à cause du froid et de conditions moins favorables.
 
 
-Les valeurs de température, d'humidité et de vitesse du vent sont normalisées. La température moyenne est la plus élevée en juillet (0.755) et la plus basse en décembre (0.324). L'humidité est relativement stable tout au long de l'année avec une légère augmentation pendant les mois d'été. La vitesse du vent moyenne est généralement la plus faible en juillet (0.166) et la plus élevée en avril (0.234). Le nombre de locations de vélos est le plus élevé en juin (5772.37) et le plus bas en janvier (2176.34).
-```{r}
+```{r echo=FALSE}
 # Calcul des moyennes mensuelles
 monthly_averages <- day_data %>%
   group_by(mnth) %>%
@@ -126,8 +189,21 @@ print(monthly_averages)
 
 #La température est-elle associée aux locations de vélos (enregistrés vs occasionnels) ?
 
-Nous étudierons comment la température affecte différemment les utilisateurs enregistrés et occasionnels.
-```{r}
+## <span style="color:blue">Influence de la Température sur les Locations de Vélos</span>
+
+Nous avons exploré la dynamique entre la température et les locations de vélos, en différenciant les utilisateurs occasionnels des utilisateurs enregistrés. Les données montrent une corrélation entre la température et la fréquence de location des vélos, avec une tendance nette indiquant que les utilisateurs enregistrés et occasionnels sont affectés différemment par les variations de température.
+
+La visualisation des données, comme le montre le graphique ci-dessus, illustre les tendances suivantes :
+
+- Les utilisateurs **occasionnels** ont tendance à louer des vélos plus fréquemment à mesure que la température augmente, ce qui suggère une préférence pour l'utilisation de vélos dans des conditions météorologiques plus chaudes.
+- Les utilisateurs **enregistrés** présentent une activité plus constante qui semble moins sensible aux changements de température, ce qui peut refléter un engagement régulier avec le service de partage de vélos, indépendamment des variations météorologiques.
+
+La ligne représentant les utilisateurs occasionnels montre des pics marqués durant les périodes plus chaudes, tandis que celle des utilisateurs enregistrés démontre une consistance tout au long de l'échelle de température, bien que présentant également une tendance à l'augmentation avec la température.
+
+Ces insights sont précieux pour les opérateurs de systèmes de partage de vélos, car ils indiquent la nécessité d'ajuster les stratégies de disponibilité et de marketing pour répondre aux besoins distincts des différents groupes d'utilisateurs tout au long de l'année.
+
+
+```{r echo=FALSE}
 # Association de la température avec les locations de vélos
 rentals_by_temp <- day_data %>%
   group_by(temp) %>%
@@ -142,9 +218,10 @@ ggplot(rentals_by_temp, aes(x = temp)) +
        x = "Température Normalisée",
        y = "Locations Moyennes")
 ```
+### Analyse de Corrélation
+La seconde partie de notre analyse a consisté à calculer la corrélation statistique pour appuyer visuellement les tendances observées :
 
-
-```{r}
+```{r echo=FALSE}
 # Calcul de la corrélation entre température et locations pour les utilisateurs enregistrés et occasionnels
 correlation_temp_users <- day_data %>%
   select(temp, casual, registered) %>%
@@ -155,16 +232,18 @@ print(correlation_temp_users)
 
 ```
 
-
-Calculer la corrélation entre la température et les locations pour les utilisateurs enregistrés et occasionnels.
-
-Résumer comment les locations moyennes varient avec la température en regroupant les températures par intervalles puis en calculant le nombre moyen de locations pour chaque groupe.
-????????????????????je ne sais pas
+Il y a une corrélation modérée entre la température et les locations pour les utilisateurs occasionnels (casual) de **0.5433**. Cela indique que les jours plus chauds voient une augmentation notable des locations de vélos par ces utilisateurs.
+La corrélation entre la température et les utilisateurs enregistrés (registered) est presque identique à **0.5400**, ce qui indique que même si les utilisateurs enregistrés utilisent régulièrement le service, leur utilisation tend également à augmenter avec la température.
+La corrélation entre les locations des utilisateurs occasionnels et enregistrés est moins forte à **0.3953**, ce qui peut indiquer des motifs d'utilisation différents entre les deux groupes.
 
 
 
 
-```{r}
+## <span style="color:blue">Analyse Temporelle des Locations de Vélos</span>
+
+L'analyse de la série temporelle du nombre de locations de vélos par jour révèle des modèles et des anomalies significatifs. La visualisation suivante a été générée pour illustrer ces tendances:
+
+```{r echo=FALSE}
 # Conversion de 'dteday' en format de date
 day_data$dteday <- as.Date(day_data$dteday, format="%Y-%m-%d")
 
@@ -177,11 +256,21 @@ ggplot(day_data, aes(x=dteday, y=cnt)) +
   theme(axis.text.x = element_text(angle=90, hjust=1))
 
 ```
-Il y a une saison annuelle, on voit une tendance ( mois plus chauds implique hausse des locations et une baisse pendant les mois plus froids). La variance est plus au moins constante.
+- **Tendance Saisonnière :** Le graphique montre une variation claire qui suggère une tendance saisonnière, avec des pics de locations durant certaines périodes, probablement liés aux saisons plus chaudes, et des creux durant d'autres, qui coïncident vraisemblablement avec les périodes plus froides.
+- **Irrégularités :** Des fluctuations sont également visibles, indiquant des irrégularités qui pourraient être causées par des jours spécifiques de la semaine, des événements locaux, ou des conditions météorologiques changeantes.
+- **Pics et Creux :** Les pics de location pourraient correspondre aux jours ouvrables ou aux événements spéciaux, tandis que les creux pourraient refléter des jours fériés ou des conditions météorologiques défavorables.
 
 
 
-```{r}
+## <span style="color:blue">Lissage de la Série Temporelle des Locations de Vélos</span>
+
+Dans le but de construire un modèle prédictif pour les locations de vélos, nous avons appliqué le modèle de Holt-Winters pour lisser la série temporelle. Ce modèle prend en compte la saisonnalité des données, permettant de mieux comprendre les tendances sous-jacentes.
+
+### Modèle de Holt-Winters
+Le modèle de Holt-Winters ajuste la série temporelle en tenant compte de trois composants : la tendance, la saisonnalité et le niveau. La visualisation suivante montre les données observées (en noir) avec la courbe ajustée par le modèle (en rouge) :
+
+
+```{r echo=FALSE}
 
 
 # Conversion de 'dteday' en format de date
@@ -197,7 +286,7 @@ floor <- quantiles[1] - 1.5 * IQR_values
 day_data <- day_data %>%
   filter(cnt >= floor & cnt <= cap)
 
-# Lisser la série temporelle en utilisant une moyenne mobile avec la fonction 'filter' du package 'stats'
+
 day_data$cnttimeseries <- ts(day_data$cnt, frequency = 12)
 
 hw_model <- HoltWinters(day_data$cnttimeseries)
@@ -205,14 +294,36 @@ hw_model <- HoltWinters(day_data$cnttimeseries)
 plot(hw_model)
 
 ```
+- **Tendance Générale :** La courbe ajustée suit étroitement la série temporelle observée, capturant les tendances ascendantes et descendantes au fil du temps.
+- **Saisonnalité :** Les motifs répétitifs reflètent la saisonnalité des données, avec des périodes de forte demande alternant avec des périodes plus calmes.
+- **Niveau :** Le modèle adapte également le niveau général des données, indiquant le nombre moyen de locations sur la période étudiée.
+
+### Implications pour la Prédiction
+Le lissage de Holt-Winters facilite la prédiction de la demande future en fournissant une base plus stable à partir de laquelle les modèles prédictifs peuvent être développés. En tenant compte de la saisonnalité et des tendances, nous pouvons anticiper les variations futures de la demande et planifier l'allocation des vélos en conséquence.
 
 
 
-```{r}
+
+
+## <span style="color:blue">Analyse de la Stationnarité et Saisonnalité de la Série Temporelle Lissée</span>
+
+Après avoir appliqué le modèle de lissage Holt-Winters aux données de locations de vélos, nous avons obtenu une série temporelle lissée qui reflète les tendances centrales et la saisonnalité sans le bruit des fluctuations quotidiennes.
+
+### Lissage Holt-Winters
+Le modèle Holt-Winters a été choisi pour son efficacité à capturer à la fois la tendance et la saisonnalité dans les données. En lissant la série temporelle, nous réduisons la variabilité aléatoire et mettons en évidence les composantes structurelles, telles que la tendance et les motifs saisonniers.
+
+La fréquence a été définie sur 12 pour correspondre aux cycles mensuels, supposant une saisonnalité annuelle avec des pics d'utilisation potentiellement liés aux saisons plus chaudes et des creux pendant les saisons plus froides.
+
+
+
+### Test de Stationnarité
+Pour évaluer la stationnarité de la série lissée, le test de Dickey-Fuller augmenté a été effectué:
+
+```{r echo=FALSE}
 # Extraire les valeurs prévues à partir du modèle HoltWinters
 fitted_values <- hw_model$fitted[, "xhat"]
 
-# Ajouter la fréquence appropriée à la série lissée (remplacez 12 par la fréquence appropriée)
+# Ajouter la fréquence appropriée à la série lissée 
 smoothed_ts <- ts(fitted_values, frequency = 12)
 
 plot(smoothed_ts)
@@ -225,7 +336,15 @@ print(result)
 ```
 La série n'est pas stationnaire (variance constante mais moyenne variable) le test de Dicker Fuller confirme cela avec une p_value = 0.96 (hyp nulle : non stationnaire), on distingue une saison (qui se répète deux fois).
 
-```{r}
+
+
+## <span style="color:blue">Évaluation de la Stationnarité après Différenciation Saisonnière</span>
+
+Afin d'atteindre la stationnarité, nécessaire pour la modélisation ARIMA, nous avons appliqué une différenciation saisonnière à la série temporelle lissée des locations de vélos. Cette technique est conçue pour supprimer les effets saisonniers et les tendances, en calculant la différence entre chaque observation et son équivalent dans la saison précédente.
+
+### Série Temporelle Différenciée
+Le graphique de la série différenciée illustre les résultats de cette transformation :
+```{r echo=FALSE}
 # Appliquer la différenciation saisonnière
 diff_series <- diff(smoothed_ts, lag=12)
 
@@ -233,19 +352,51 @@ diff_series <- diff(smoothed_ts, lag=12)
 plot(diff_series, main="Série Temporelle Différenciée", xlab="Temps", ylab="Différences")
 
 ```
+- **Élimination des Tendances et Saisonnalité :** Le graphique montre que la tendance à long terme et les motifs saisonniers sont moins apparents, indiquant une réussite potentielle dans la stabilisation de la moyenne de la série.
 
 
-```{r}
+### Test de Stationnarité
+Après la différenciation, un test de stationnarité peut être réappliqué pour confirmer que la série transformée satisfait les conditions de stationnarité. Si la série est en effet devenue stationnaire, elle peut être utilisée pour ajuster un modèle ARIMA, qui nécessite une série temporelle stationnaire pour des prédictions précises et fiables.
+
+
+
+
+## <span style="color:blue">Identification des Paramètres ARIMA</span>
+
+L'étape suivante dans notre analyse consiste à déterminer les ordres appropriés des termes autorégressifs (AR) et de moyenne mobile (MA) pour un modèle ARIMA qui pourrait être ajusté à notre série temporelle lissée et différenciée. Les tracés PACF et ACF nous fournissent des indices visuels pour cette identification.
+
+### Fonction d'Autocorrélation Partielle (PACF)
+Le tracé PACF montre une décroissance exponentielle, ce qui suggère des termes AR significatifs dans le modèle. Sur le tracé PACF, nous identifions un terme AR potentiel à l'ordre 2 (AR(2)), car après le décalage 2, les autocorrélations partielles tombent dans la zone de non-significativité.
+
+
+```{r echo=FALSE}
 pacf(diff_series,lag.max=100, main="PACF")
+
 ```
 
+### Fonction d'Autocorrélation (ACF)
 
-```{r}
+Le tracé ACF, quant à lui, montre également une décroissance exponentielle et suggère la présence de termes MA. Un modèle MA(9) pourrait être approprié puisque l'ACF montre 9 barres significatives avant de tomber en dessous des seuils de confiance.
+
+```{r echo=FALSE}
 acf(diff_series,lag.max= 100, main="ACF")
 
 ```
-On remarque le PACF décroit exponentiellement, et sur le ACF on lit : MA(9)
-On remarque le ACF décroit exponentiellement, et sur le PACF on lit : AR(2)
+
+
+### Modélisation Saisonnière
+
+En ce qui concerne la saisonnalité, nous observons sur l'ACF une décroissance qui suggère un terme saisonnier MA, et sur le PACF un terme saisonnier AR avec un ordre potentiel de 4, indiquant un cycle saisonnier annuel quand on prend en compte une saisonnalité mensuelle (lag=12).
+
+
+### Conclusion pour les Modèles ARIMA
+Compte tenu de ces observations, plusieurs modèles ARIMA saisonniers pourraient être envisagés :
+- ARIMA(2,0,0)(3,1,0)[12]
+- ARIMA(0,0,9)(4,1,0)[12]
+- ARIMA(2,0,0)(0,1,2)[12]
+- ARIMA(0,0,9)(0,1,2)[12]
+
+Chacun de ces modèles sera évalué pour déterminer le meilleur ajustement en utilisant des critères tels que l'AIC (Critère d'Information d'Akaike), le BIC (Critère d'Information Bayésien) ou la validation croisée.
 
 Concernant les saisons, sur le ACF ça décroit et sur le PACF on lit P = 4
 sur le PACF ça décroit et sur le ACF on lit Q=4
@@ -260,8 +411,14 @@ sur le PACF ça décroit et sur le ACF on lit Q=4
 ```
 
 
+## <span style="color:blue">Évaluation des Modèles Candidats ARIMA</span>
 
-```{r}
+Pour notre série temporelle des locations de vélos, un modèle ARIMA saisonnier a été ajusté et évalué. Le modèle choisi pour cette évaluation est ARIMA(2,0,0)(3,1,0)[12], indiquant un modèle autorégressif d'ordre 2 avec une composante saisonnière autorégressive d'ordre 3 et un cycle saisonnier de 12.
+
+
+
+
+```{r echo=FALSE}
 model_m1 <- arima(smoothed_ts, order = c(2, 0, 0), seasonal = list(order = c(3, 1, 0), period = 12))
 
 residuals_m1 <- residuals(model_m1)
@@ -279,9 +436,25 @@ cat("AIC du modèle m1:", aic_value_m1, "\n")
 #AIC=10179.9 
 ```
 
+### Analyse des Résidus
+Les résidus du modèle fournissent une indication de la qualité de l'ajustement. Un modèle bien ajusté aura des résidus qui ressemblent à un bruit blanc, c'est-à-dire qu'ils seront indépendants et identiquement distribués avec une moyenne de zéro et une variance constante.
 
 
-```{r}
+### Test de Ljung-Box
+Le test de Ljung-Box a été appliqué pour tester l'indépendance des résidus. Avec une valeur p de `0.8092`, nous ne rejetons pas l'hypothèse nulle que les résidus sont indépendants.
+
+
+## <span style="color:blue">Analyse du Second Modèle ARIMA et de ses Résidus</span>
+
+Un second modèle ARIMA(0,0,9)(4,1,0)[12] a été ajusté à la série temporelle lissée des locations de vélos. Ce modèle met l'accent sur les termes de moyenne mobile (MA) avec une forte composante saisonnière.
+
+### Résidus du Modèle ARIMA(0,0,9)(4,1,0)[12]
+Après ajustement du modèle, les résidus ont été analysés pour évaluer la qualité de l'ajustement du modèle. Un modèle bien ajusté devrait avoir des résidus qui ressemblent à du bruit blanc, ce qui implique qu'ils sont indépendants et uniformément distribués avec une moyenne proche de zéro et une variance constante.
+
+La visualisation des résidus montre une absence de structure ou de tendance apparente, ce qui est confirmé par les tracés ACF et PACF des résidus, ne montrant aucun pic significatif indiquant des autocorrélations résiduelles.
+
+
+```{r echo=FALSE}
 model_m2 <- arima(smoothed_ts, order = c(0, 0, 9), seasonal = list(order = c(4, 1, 0), period = 12))
 
 residuals_m2 <- residuals(model_m2)
@@ -298,7 +471,27 @@ aic_value_m2 <- AIC(model_m2)
 cat("AIC du modèle m2:", aic_value_m2, "\n")
 #AIC=10213.16 
 ```
-```{r}
+
+
+### Test de Ljung-Box
+Le test de Ljung-Box a été effectué pour tester l'autocorrélation des résidus. Avec une valeur p de `0.7992`, il n'y a pas de preuve statistique pour rejeter l'hypothèse nulle que les résidus sont indépendants.
+
+
+
+## <span style="color:blue">Évaluation du Modèle ARIMA(2,0,0)(0,1,2)[12]</span>
+
+Dans la poursuite de notre sélection de modèle pour les prévisions de locations de vélos, un troisième modèle ARIMA a été considéré. Ce modèle, ARIMA(2,0,0)(0,1,2)[12], combine les termes autorégressifs avec des termes de moyenne mobile saisonnière.
+
+### Résidus du Modèle ARIMA(2,0,0)(0,1,2)[12]
+Les résidus de ce modèle ont été analysés pour évaluer la qualité de l'ajustement, avec une attention particulière à l'indépendance et à la distribution des résidus.
+
+La visualisation des résidus montre un comportement similaire à celui d'un bruit blanc, sans tendance ou saisonnalité apparente, ce qui indique un bon ajustement du modèle.
+
+
+Les tracés ACF et PACF des résidus ne montrent pas de pics significatifs, suggérant que le modèle capture bien l'information dans les données sans laisser de structures autocorrélées non expliquées.
+
+
+```{r echo=FALSE}
 model_m3 <- arima(smoothed_ts, order = c(2, 0, 0), seasonal = list(order = c(0, 1, 2), period = 12))
 
 residuals_m3 <- residuals(model_m3)
@@ -316,7 +509,19 @@ cat("AIC du modèle m3:", aic_value_m3, "\n")
 #AIC=10131.05  
 ```
 
-```{r}
+## <span style="color:blue">Évaluation du Modèle ARIMA(0,0,9)(0,1,2)[12] et ses Résidus</span>
+
+Un quatrième modèle ARIMA a été considéré pour affiner davantage nos prévisions de locations de vélos. Ce modèle, ARIMA(0,0,9)(0,1,2)[12], met l'accent sur les termes de moyenne mobile avec une composante saisonnière significative de moyenne mobile.
+
+### Résidus du Modèle ARIMA(0,0,9)(0,1,2)[12]
+Les résidus de ce modèle ont été examinés pour déterminer si le modèle capture adéquatement les dynamiques sous-jacentes des données de locations de vélos.
+
+La visualisation des résidus montre une distribution aléatoire autour de zéro, ce qui suggère que le modèle ajuste bien les données sans laisser de structure autocorrélative non expliquée.
+
+Les fonctions d'autocorrélation (ACF) et d'autocorrélation partielle (PACF) des résidus montrent que la plupart des autocorrélations résiduelles se situent à l'intérieur des bornes de confiance, ce qui indique que les résidus se comportent comme un bruit blanc.
+
+
+```{r echo=FALSE}
 model_m4 <- arima(smoothed_ts, order = c(0, 0, 9), seasonal = list(order = c(0, 1, 2), period = 12))
 
 residuals_m4 <- residuals(model_m4)
@@ -334,10 +539,37 @@ cat("AIC du modèle m4:", aic_value_m4, "\n")
 #AIC=10206.35 
 
 ```
-Le meilleur modèle a l'air d'être le modèle m2 : ARIMA(0,0,9)(4,1,0)h=12
+### Test de Ljung-Box
+Le test de Ljung-Box est utilisé pour vérifier l'absence d'autocorrélation dans les résidus à un ensemble de décalages. Pour ce modèle, le test donne une valeur p de `0.8202`, ne fournissant aucune preuve d'autocorrélation significative.
 
 
-```{r}
+
+
+## <span style="color:blue">Sélection du Modèle ARIMA pour les Prévisions de Locations de Vélos</span>
+
+Après une analyse rigoureuse des différents modèles ARIMA, le modèle m3, ARIMA(2,0,0)(0,1,2)[12], s'est distingué comme étant le plus performant pour notre série temporelle de données sur les locations de vélos.
+
+### Justification du Modèle m3
+Le modèle m3 présente plusieurs avantages qui justifient sa sélection :
+
+- **Critère d'Information d'Akaike (AIC) :** Avec un AIC de `10131.05`, le modèle m3 a l'AIC le plus bas parmi les modèles examinés, indiquant le meilleur ajustement relatif.
+  
+
+
+## <span style="color:blue">Évaluation du Modèle ARIMA Post-Désaisonnalisation</span>
+
+### Performance du Modèle ARIMA
+Le modèle ARIMA sélectionné automatiquement par la fonction `auto.arima` fournit une structure complexe qui capture les dynamiques des données. Les indicateurs statistiques tels que la log-vraisemblance et les critères d'information (AIC, AICc, BIC) sont des mesures clés de la performance du modèle.
+
+Les mesures d'erreur sur l'ensemble d'apprentissage, telles que RMSE et MAE, quantifient l'écart entre les prédictions du modèle et les valeurs réelles. Ces mesures sont essentielles pour l'évaluation de la précision du modèle.
+
+### Statistiques de Diagnostic
+Des statistiques telles que l'ACF1 des résidus fournissent des informations sur l'autocorrélation résiduelle, un indicateur important de la qualité de l'ajustement du modèle.
+
+### Conclusion
+Le modèle ARIMA(5,1,1)(2,0,0)[12] sera utilisé pour réaliser des prévisions.
+
+```{r echo=FALSE}
 library(forecast)
 
 # Ajuster un modèle ARIMA automatiquement sur les données stationnaires
@@ -349,26 +581,56 @@ model <- auto.arima(smoothed_ts)
 summary(model)
 ```
 
-##Désaisonnaliser les données :
-```{r}
+
+La mise en œuvre d'un modèle ARIMA après désaisonnalisation permet d'obtenir des prévisions plus fiables en tenant compte uniquement des tendances et motifs inhérents à la série temporelle.
+
+### Visualisation des Données Désaisonnalisées
+Un graphique des différences des locations de vélos montre l'effet de la désaisonnalisation, mettant en évidence la tendance et les variations aléatoires restantes.
+
+```{r echo=FALSE}
 #Désaisonnaliser les données 
 diff_cnt <- diff(day_data$cnt, lag=12)
 plot(diff_cnt)
 
 
 ```
-```{r}
+
+## <span style="color:blue">Diagnostic de la Série Temporelle Désaisonnalisée</span>
+
+Une analyse de la fonction d'autocorrélation partielle (PACF) a été effectuée sur la série temporelle après désaisonnalisation pour identifier les ordres potentiels des termes autorégressifs du modèle ARIMA.
+
+### Interprétation de la PACF
+
+
+
+```{r echo=FALSE}
 pacf(diff_cnt, main="PACF")
 ```
 L'ACF présente une décroissance rapide après le premier décalage, ce qui suggère un terme MA. Si ce décalage est le seul significatif, cela pourrait indiquer un modèle MA(1).
 
-
 Le PACF montre un pic significatif au premier décalage et ensuite il se stabilise, ce qui est typique d'un modèle AR(1).
 
-```{r}
+
+## <span style="color:blue">Analyse de la Fonction d'Autocorrélation (ACF)</span>
+
+Une analyse de la fonction d'autocorrélation (ACF) a également été conduite pour compléter l'analyse PACF et affiner le choix des termes du modèle ARIMA.
+
+### Résultats de l'ACF
+L'ACF montre une décroissance significative après le premier décalage, ce qui suggère un terme AR(1). Cela est cohérent avec un modèle qui a un seul terme autorégressif dans la partie non saisonnière de la série temporelle.
+
+```{r echo=FALSE}
 
 acf(diff_cnt, main="ACF")
 ```
+
+
+Un pic significatif au troisième décalage peut également suggérer un terme MA(3), indiquant que les erreurs de prévision actuelles peuvent être influencées par les erreurs des trois périodes précédentes.
+
+### Implications pour le Modèle ARIMA
+Les résultats de l'ACF, en combinaison avec la PACF, indiquent que les modèles ARIMA(1,0,0) ou ARIMA(0,0,3) pourraient être appropriés pour modéliser la série temporelle. Ces modèles seront évalués pour leur performance de prévision et comparés pour sélectionner le modèle le plus approprié.
+
+
+
 ```{r}
 #AR(1)
 #MA(3)
@@ -377,7 +639,25 @@ acf(diff_cnt, main="ACF")
 
 
 ```
-```{r}
+
+## <span style="color:blue">Sélection du Modèle ARIMA</span>
+
+Une série de modèles ARIMA ont été ajustés sur la série temporelle désaisonnalisée afin de déterminer le candidat le plus adapté pour la prévision.
+
+### Modèle ARIMA(1,0,0) sur Données Désaisonnalisées
+Un modèle ARIMA avec un seul terme autorégressif (ARIMA(1,0,0)) a été ajusté, et son diagnostic a été réalisé pour évaluer la qualité de l'ajustement.
+
+Les résidus de ce modèle ne montrent aucun pic significatif dans les fonctions ACF et PACF, indiquant qu'il n'y a pas de corrélation automatique restante à prendre en compte.
+
+
+Le test de Ljung-Box sur les résidus a donné une valeur-p de 0.5961, suggérant que les résidus sont indépendants et bien distribués.
+
+### Évaluation du Modèle
+L'AIC (Critère d'Information d'Akaike) du modèle ARIMA(1,0,0) est de 12343.73.
+
+
+
+```{r echo=FALSE}
 model_m1_deseasonal <- arima(diff_cnt, order = c(1, 0, 0))
 
 residuals_m1_deseasonal <- residuals(model_m1_deseasonal)
@@ -395,7 +675,25 @@ cat("AIC du modèle m4:", aic_value_m1_deseasonal, "\n")
 #AIC=12343.73  
 
 ```
-```{r}
+
+## Analyse du Modèle ARIMA(0,0,3) sur Données Désaisonnalisées
+
+Un autre modèle examiné est le modèle ARIMA(0,0,3), qui intègre trois termes de moyenne mobile.
+
+### Diagnostic du Modèle ARIMA(0,0,3)
+
+Les résidus de ce modèle ne montrent aucun pic significatif dans l'ACF ou le PACF, ce qui indique que les erreurs de prédiction ne sont pas autocorrélées.
+
+Les graphiques ACF et PACF des résidus ne révèlent pas de pics significatifs, ce qui est une bonne indication que le modèle capte bien la structure de dépendance dans les données.
+
+Le test de Ljung-Box donne une valeur-p très élevée de 0.9679, ce qui suggère que les résidus se comportent comme un bruit blanc, indiquant un bon ajustement du modèle aux données.
+
+### Critères d'Information
+
+L'AIC pour le modèle ARIMA(0,0,3) est de 12346.61, légèrement supérieur à celui du modèle ARIMA(1,0,0). En théorie, le modèle avec le plus petit AIC est généralement le meilleur.
+
+
+```{r echo=FALSE}
 model_m2_deseasonal <- arima(diff_cnt, order = c(0, 0, 3))
 
 residuals_m2_deseasonal <- residuals(model_m2_deseasonal)
@@ -412,11 +710,19 @@ aic_value_m2_deseasonal<- AIC(model_m2_deseasonal)
 cat("AIC du modèle m2:", aic_value_m2_deseasonal, "\n")
 #AIC=12346.61    
 ```
-Le meilleur modèle en prenant en compte the Parsimony principle est le modèle m1 : AR(1)
+
+
+### Conclusion
+
+Entre le modèle ARIMA(1,0,0) avec un AIC de 12343.73 et le modèle ARIMA(0,0,3) avec un AIC de 12346.61, le premier modèle est légèrement préféré selon le critère AIC. Cependant, d'autres critères, comme la simplicité du modèle et la facilité d'interprétation, peuvent aussi être pris en compte pour le choix final du modèle.
 
 
 
-```{r}
+## <span style="color:blue">Ajustement Automatique d'un Modèle ARIMA</span>
+L'utilisation de la fonction `auto.arima` du package `forecast` permet de sélectionner automatiquement le meilleur modèle ARIMA en fonction des données désaisonnalisées. Cette méthode prend en compte diverses combinaisons de termes AR, MA, et les différenciations nécessaires pour trouver le modèle le plus approprié.
+
+
+```{r echo=FALSE}
 # Installer le package forecast si nécessaire
 
 # Charger le package forecast
@@ -430,8 +736,40 @@ summary(fit_arima)
 
 ```
 
+### Résultats du Modèle Auto-ARIMA
 
-```{r}
+Le modèle sélectionné est un ARIMA(0,1,3), qui indique qu'aucun terme autorégressif n'est nécessaire, qu'une différenciation d'ordre 1 est suffisante pour rendre la série stationnaire et que trois termes de moyenne mobile sont inclus pour capturer la structure de dépendance dans les données.
+
+Les coefficients des termes MA sont respectivement -0.5378, -0.3000, et -0.1367, avec des erreurs standard faibles, indiquant que les coefficients sont significatifs.
+
+### Mesures de Performance
+
+La log-vraisemblance du modèle est -6161.37, et les critères d'information tels que l'AIC, l'AICc, et le BIC sont respectivement 12330.74, 12330.8, et 12349.05. Ces valeurs fournissent une mesure de la qualité du modèle par rapport à la complexité.
+
+
+### Analyse des Résidus
+
+La corrélation des résidus d'ordre 1 (ACF1) est très proche de zéro, ce qui suggère que le modèle a bien capturé la structure d'information dans les données.
+
+### Conclusion
+
+Le modèle ARIMA(0,1,3) ajusté automatiquement semble être le meilleur modèle selon les critères d'information et les mesures d'erreur. Cependant, une vérification supplémentaire des résidus et des prévisions est recommandée pour confirmer la qualité des prévisions du modèle sélectionné.
+
+
+
+
+## <span style="color:blue">Diagnostic des Résidus du Modèle ARIMA Automatique</span>
+
+
+Après avoir ajusté un modèle ARIMA automatiquement aux données désaisonnalisées, nous procédons à l'analyse des résidus pour évaluer la qualité de l'ajustement.
+
+
+
+### Conclusion
+
+En se basant sur les diagnostics des résidus et le test de Ljung-Box, le modèle ARIMA ajusté automatiquement semble être bien spécifié. Les résidus semblent être du bruit blanc, ce qui est une indication que le modèle a capturé toute l'information disponible dans les données. Le modèle est donc jugé adéquat pour les prévisions.
+
+```{r echo=FALSE}
 
 residuals_adjusted_deseasonal <- residuals(fit_arima)
 plot(residuals_adjusted_deseasonal)
@@ -448,15 +786,27 @@ cat("AIC du modèle auto arima:", aic_value_adjusted, "\n")
     
 
 ```
+### Résidus du Modèle
+
+Les résidus du modèle ARIMA automatique choisi ne montrent pas de pics significatifs dans l'ACF ou le PACF, ce qui indique que les résidus ne présentent pas d'autocorrélation et que le modèle capture bien les dépendances dans les données.
+
+### Test de Ljung-Box
+
+Le test de Ljung-Box sur les résidus produit une valeur-p de 0.9592, suggérant fortement que les résidus sont bien distribués de façon aléatoire, ce qui est une caractéristique des bons modèles prédictifs.
+
+### Critère d'Information d'Akaike (AIC)
+
+L'AIC du modèle auto ARIMA est de 12330.74, ce qui est une mesure relative de la perte d'information. En général, un AIC plus bas indique un meilleur modèle. Cependant, il est important de comparer cette valeur avec celles d'autres modèles pour une évaluation complète.
+
 Le modèle choisi plus haut, AR(1) donne un AIC légèrement plus élevé, de plus, il est plus simple. et d'après le principe de parsimony, il est préférable de choisir le plus simple.
 
-```{r}
+```{r echo=FALSE}
 library(forecast)
 forecasts <- forecast(model_m1_deseasonal, h=25)
 plot(forecasts)
 
 ```
-```{r}
+```{r echo=FALSE}
 
 
 cat(length(day_data$cnt))
@@ -465,7 +815,7 @@ train_data <- window(day_data$cnt, start = 1, end = 700)
 test_data <- window(day_data$cnt, start = 701)
 
 ```
-```{r}
+```{r echo=FALSE}
 train_data_ts <- ts(train_data)
 test_data_ts <- ts(test_data)
 
@@ -473,24 +823,24 @@ ts.plot(train_data_ts)
 ```
 
 
-```{r}
+```{r echo=FALSE}
 diff_train <- diff(train_data_ts, frequency=12)
 plot(diff_train)
 ```
-```{r}
+```{r echo=FALSE}
 pacf(diff_train, main="PACF")
 ```
-```{r}
+```{r echo=FALSE}
 acf(diff_train, main="ACF")
 ```
 On remarque ACF qui décroit donc AR(5)
 PACF décroît donc MA(3)
-```{r}
+```{r echo=FALSE}
 auto_model <- auto.arima(train_data)
 summary(auto_model)
 ```
 
-```{r}
+```{r echo=FALSE}
 # Ajuster un modèle ARIMA manuellement sur l'ensemble d'entraînement
 manual_model <- arima(train_data, order = c(0, 0, 3), seasonal = list(order = c(4, 1, 0), period = 12))
 
@@ -504,7 +854,7 @@ auto_forecast <- forecast(auto_model, h = 31)
 
 
 
-```{r}
+```{r echo=FALSE}
 # Installer la bibliothèque si elle n'est pas déjà installée
 # install.packages("ggplot2")
 
