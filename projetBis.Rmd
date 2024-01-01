@@ -800,49 +800,57 @@ L'AIC du modèle auto ARIMA est de 12330.74, ce qui est une mesure relative de l
 
 Le modèle choisi plus haut, AR(1) donne un AIC légèrement plus élevé, de plus, il est plus simple. et d'après le principe de parsimony, il est préférable de choisir le plus simple.
 
+
+## <span style="color:blue">Division des Données en Ensembles d'Entraînement et de Test</span>
+
+Dans cette première partie du code, les données ont été divisées en deux ensembles distincts : un ensemble d'entraînement, comprenant les observations jusqu'à la 700e, et un ensemble de test à partir de la 701e observation. La série temporelle a été visualisée à l'aide de ts.plot pour observer la tendance et la saisonnalité dans les données.
+
 ```{r echo=FALSE}
-library(forecast)
-forecasts <- forecast(model_m1_deseasonal, h=25)
-plot(forecasts)
 
-```
-```{r echo=FALSE}
-
-
-cat(length(day_data$cnt))
 # Diviser les données en ensembles d'entraînement et de test
 train_data <- window(day_data$cnt, start = 1, end = 700)
 test_data <- window(day_data$cnt, start = 701)
 
-```
-```{r echo=FALSE}
 train_data_ts <- ts(train_data)
 test_data_ts <- ts(test_data)
 
 ts.plot(train_data_ts)
 ```
-
+## <span style="color:blue">Analyse des Différences Premières</span>
 
 ```{r echo=FALSE}
 diff_train <- diff(train_data_ts, frequency=12)
 plot(diff_train)
 ```
+
+La série temporelle a été différenciée première sur l'ensemble d'entraînement pour rendre les données stationnaires.
+
 ```{r echo=FALSE}
 pacf(diff_train, main="PACF")
 ```
 ```{r echo=FALSE}
 acf(diff_train, main="ACF")
 ```
-On remarque ACF qui décroit donc AR(5)
-PACF décroît donc MA(3)
+La PACF a révélé une décroissance significative, suggérant une composante AR(5). 
+L'ACF décroissante a indiqué une composante MA(3).
+
+## <span style="color:blue">Sélection Automatique du Modèle ARIMA</span>
+
 ```{r echo=FALSE}
 auto_model <- auto.arima(train_data)
 summary(auto_model)
 ```
+La sélection automatique du modèle ARIMA sur l'ensemble d'entraînement (train_data) a abouti à la recommandation d'un modèle ARIMA(3,1,1). Le modèle semble capturer efficacement les tendances et les structures saisonnières de la série temporelle, comme en témoignent les faibles valeurs d'erreur et les coefficients significatifs. 
+Ces résultats démontrent la capacité du modèle ARIMA sélectionné à représenter de manière adéquate la dynamique de la série temporelle et fournissent une base solide pour les prévisions futures.
+
+## <span style="color:blue">Ajustement Manuel du Modèle ARIMA et Prévisions</span>
 
 ```{r echo=FALSE}
 # Ajuster un modèle ARIMA manuellement sur l'ensemble d'entraînement
 manual_model <- arima(train_data, order = c(0, 0, 3), seasonal = list(order = c(4, 1, 0), period = 12))
+
+aic_manual_model<- AIC(manual_model)
+cat("AIC du modèle fait manuellement:", aic_manual_model, "\n")
 
 # Ajuster un modèle ARIMA automatiquement sur l'ensemble d'entraînement
 auto_model <- auto.arima(train_data)
@@ -851,8 +859,14 @@ auto_model <- auto.arima(train_data)
 manual_forecast <- forecast(manual_model, h = 31)
 auto_forecast <- forecast(auto_model, h = 31)
 ```
+En parallèle, un modèle ARIMA a été ajusté manuellement sur l'ensemble d'entraînement avec une composante AR(5) et MA(3) à l'aide des résultats précédents. 
+
+Les prévisions des 31 prochaines observations ont été réalisées à l'aide de ce modèle et du modèle automatique.
 
 
+## <span style="color:blue">Comparaison des Prévisions avec ggplot2</span>
+
+Enfin, les résultats ont été visualisés avec ggplot2. Le graphique comparatif affiche les données réelles, les prévisions manuelles et automatiques pour évaluer la performance des modèles. Les séries temporelles sont distinguées par des couleurs différentes pour une interprétation claire.
 
 ```{r echo=FALSE}
 # Installer la bibliothèque si elle n'est pas déjà installée
@@ -880,3 +894,7 @@ ggplot(plot_data, aes(x = Time)) +
 
 ```
 
+L'observation des 20 premières prédictions révèle une remarquable adéquation du modèle ajusté manuellement avec la réalité observée. Bien que des décalages temporels légers aient été notés occasionnellement, le modèle manuel parvient à capturer avec précision les variations de la série temporelle.
+En contraste, l'autoforecast semble stagnante autour de la moyenne, démontrant une faible capacité à saisir les fluctuations temporelles. 
+
+Cependant, sur les 10 dernières prévisions, une disparité émerge entre les véritables observations qui décroissent de manière exponentielle et les prédictions relativement stationnaires des deux modèles. Cela souligne les limites de la capacité prédictive des modèles, notamment lorsqu'ils sont confrontés à des changements abrupts dans la tendance temporelle.
